@@ -71,12 +71,12 @@ const SolarSystem = ({ options }) => {
         const cubeTextureLoader =
             new THREE.CubeTextureLoader();
         const cubeTexture = cubeTextureLoader.load([
-            "/src/assets/stars.jpg",
-            "/src/assets/stars.jpg",
-            "/src/assets/stars.jpg",
-            "/src/assets/stars.jpg",
-            "/src/assets/stars.jpg",
-            "/src/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
         ]);
         scene.background = cubeTexture;
 
