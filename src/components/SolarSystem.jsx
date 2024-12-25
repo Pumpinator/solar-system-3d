@@ -272,7 +272,7 @@ const SolarSystem = ({ options }) => {
                     { x: 176, y: 0 },
                     {
                         innerRadius: 199 / 500,
-                        outerRadius: (199 / 500) * (7 / 12),
+                        outerRadius: (199 / 500) * 1.5,
                         ringmat: uranusRingTexture,
                     }
                 ),
