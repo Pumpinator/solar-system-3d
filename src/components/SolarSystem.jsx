@@ -311,10 +311,14 @@ const SolarSystem = ({ options }) => {
                 path_of_planets,
                 showOrbits
             ),
+            "Turn stars": true,
             "speed": speed,
         };
         gui.add(options, "Turn lights").onChange((e) => {
             turnLights(ambientLight, e);
+        });
+        gui.add(options, "Turn stars").onChange((e) => {
+            turnStars(scene, cubeTexture, e);
         });
         gui.add(options, "Show orbits").onChange((e) => {
             turnOrbits(path_of_planets, e);
@@ -376,6 +380,12 @@ const SolarSystem = ({ options }) => {
 
     const turnLights = (ambientLight, e) => {
         ambientLight.intensity = e ? 0 : 0.5;
+        return e;
+    };
+
+    const turnStars = (scene, cubeTexture, e) => {
+        if(!e) scene.background = null;
+        else scene.background = cubeTexture;
         return e;
     };
 
