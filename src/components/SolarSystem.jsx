@@ -17,40 +17,40 @@ const SolarSystem = ({ options }) => {
 
         const textureLoader = new THREE.TextureLoader();
         const sunTexture = textureLoader.load(
-            "/src/assets/sun.jpg"
+            "/assets/sun.jpg"
         );
         const mercuryTexture = textureLoader.load(
-            "/src/assets/mercury.jpg"
+            "/assets/mercury.jpg"
         );
         const venusTexture = textureLoader.load(
-            "/src/assets/venus.jpg"
+            "/assets/venus.jpg"
         );
         const earthTexture = textureLoader.load(
-            "/src/assets/earth.jpg"
+            "/assets/earth.jpg"
         );
         const marsTexture = textureLoader.load(
-            "/src/assets/mars.jpg"
+            "/assets/mars.jpg"
         );
         const jupiterTexture = textureLoader.load(
-            "/src/assets/jupiter.jpg"
+            "/assets/jupiter.jpg"
         );
         const saturnTexture = textureLoader.load(
-            "/src/assets/saturn.jpg"
+            "/assets/saturn.jpg"
         );
         const uranusTexture = textureLoader.load(
-            "/src/assets/uranus.jpg"
+            "/assets/uranus.jpg"
         );
         const neptuneTexture = textureLoader.load(
-            "/src/assets/neptune.jpg"
+            "/assets/neptune.jpg"
         );
         const plutoTexture = textureLoader.load(
-            "/src/assets/pluto.jpg"
+            "/assets/pluto.jpg"
         );
         const saturnRingTexture = textureLoader.load(
-            "/src/assets/saturn_ring.png"
+            "/assets/saturn_ring.png"
         );
         const uranusRingTexture = textureLoader.load(
-            "/src/assets/uranus_ring.png"
+            "/assets/uranus_ring.png"
         );
 
         const scene = new THREE.Scene();

@@ -18,7 +18,7 @@ const App = () => {
                 rel="noopener noreferrer"
             >
                 <img
-                    src="/src/assets/instagram.svg"
+                    src="/instagram.svg"
                     alt="instagram"
                 />
             </a>
