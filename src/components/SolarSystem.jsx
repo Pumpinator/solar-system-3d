@@ -123,13 +123,21 @@ const SolarSystem = ({ options }) => {
 
         const createPlanet = (planet) => {
             const angle = Math.random() * Math.PI * 2; // Ángulo aleatorio en radianes
-            const x = Math.cos(angle) * (planet.distance / scale);
-            const z = Math.sin(angle) * (planet.distance / scale);
+            const x =
+                Math.cos(angle) * (planet.distance / scale);
+            const z =
+                Math.sin(angle) * (planet.distance / scale);
 
             planet.mesh = new THREE.Mesh(
-                new THREE.SphereGeometry((planet.radius / scale) * planetScale, 50, 50),
+                new THREE.SphereGeometry(
+                    (planet.radius / scale) * planetScale,
+                    50,
+                    50
+                ),
                 new THREE.MeshStandardMaterial({
-                    map: textureLoader.load(`/assets/${planet.texture}`),
+                    map: textureLoader.load(
+                        `/assets/${planet.texture}`
+                    ),
                 })
             );
             planet.mesh.castShadow = true;
@@ -141,12 +149,16 @@ const SolarSystem = ({ options }) => {
             if (planet.ring) {
                 planet.ring.mesh = new THREE.Mesh(
                     new THREE.RingGeometry(
-                        (planet.ring.innerRadius / scale) * planetScale,
-                        (planet.ring.outerRadius / scale) * planetScale,
+                        (planet.ring.innerRadius / scale) *
+                            planetScale,
+                        (planet.ring.outerRadius / scale) *
+                            planetScale,
                         32
                     ),
                     new THREE.MeshStandardMaterial({
-                        map: textureLoader.load(`/assets/${planet.ring.texture}`),
+                        map: textureLoader.load(
+                            `/assets/${planet.ring.texture}`
+                        ),
                         side: THREE.DoubleSide,
                         transparent: true,
                         opacity: planet.ring.opacity,
@@ -160,7 +172,11 @@ const SolarSystem = ({ options }) => {
             }
 
             scene.add(planet.object3d);
-            createLineLoopWithMesh(planet.distance / scale, 0x005300, 1);
+            createLineLoopWithMesh(
+                planet.distance / scale,
+                0x005300,
+                1
+            );
             return planet;
         };
 
@@ -174,7 +190,7 @@ const SolarSystem = ({ options }) => {
             "Show orbits": turnOrbits(showOrbits),
             "Turn stars": true,
             "Planet scale": planetScale,
-            "Speed": speed,
+            Speed: speed,
         };
 
         gui.add(options, "Turn stars").onChange((e) => {
@@ -185,26 +201,35 @@ const SolarSystem = ({ options }) => {
             turnOrbits(e);
         });
 
-        gui.add(options, "Planet scale", 1, 100).onChange((e) => {
-            const newScale = Math.round(e);
-            setPlanetScale(scale);
-            data.forEach((planet) => {
-                planet.mesh.geometry.dispose();
-                planet.mesh.geometry = new THREE.SphereGeometry(
-                    (planet.radius / scale) * newScale,
-                    50,
-                    50
-                );
-                if (planet.ring) {
-                    planet.ring.mesh.geometry.dispose();
-                    planet.ring.mesh.geometry = new THREE.RingGeometry(
-                        (planet.ring.innerRadius / scale) * newScale,
-                        (planet.ring.outerRadius / scale) * newScale,
-                        32
-                    );
-                }
-            });
-        });
+        gui.add(options, "Planet scale", 1, 100).onChange(
+            (e) => {
+                const newScale = Math.round(e);
+                setPlanetScale(scale);
+                data.forEach((planet) => {
+                    planet.mesh.geometry.dispose();
+                    planet.mesh.geometry =
+                        new THREE.SphereGeometry(
+                            (planet.radius / scale) *
+                                newScale,
+                            50,
+                            50
+                        );
+                    if (planet.ring) {
+                        planet.ring.mesh.geometry.dispose();
+                        planet.ring.mesh.geometry =
+                            new THREE.RingGeometry(
+                                (planet.ring.innerRadius /
+                                    scale) *
+                                    newScale,
+                                (planet.ring.outerRadius /
+                                    scale) *
+                                    newScale,
+                                32
+                            );
+                    }
+                });
+            }
+        );
 
         const maxSpeed =
             new URL(window.location.href).searchParams.get(
@@ -217,7 +242,6 @@ const SolarSystem = ({ options }) => {
             0,
             maxSpeed ? maxSpeed : 20
         );
-
 
         renderer.setAnimationLoop((time) => {
             sun.mesh.rotateY(options.Speed * 0.004);
