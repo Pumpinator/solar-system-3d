@@ -3,8 +3,8 @@ import SolarSystem from "./components/SolarSystem";
 
 const App = () => {
     const [options, setOptions] = useState({
-        speed: 0.1,
-        showOrbits: false,
+        speed: 0.001,
+        showOrbits: true,
         scale: 100000
     });
 

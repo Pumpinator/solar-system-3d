@@ -122,41 +122,31 @@ const SolarSystem = ({ options }) => {
         };
 
         const createPlanet = (planet) => {
+            const angle = Math.random() * Math.PI * 2; // Ángulo aleatorio en radianes
+            const x = Math.cos(angle) * (planet.distance / scale);
+            const z = Math.sin(angle) * (planet.distance / scale);
+
             planet.mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(
-                    (planet.radius / scale) * planetScale,
-                    50,
-                    50
-                ),
+                new THREE.SphereGeometry((planet.radius / scale) * planetScale, 50, 50),
                 new THREE.MeshStandardMaterial({
-                    map: textureLoader.load(
-                        `/assets/${planet.texture}`
-                    ),
+                    map: textureLoader.load(`/assets/${planet.texture}`),
                 })
             );
             planet.mesh.castShadow = true;
             planet.mesh.receiveShadow = true;
-            planet.mesh.position.set(
-                planet.distance / scale,
-                0,
-                0
-            );
+            planet.mesh.position.set(x, 0, z);
             planet.object3d = new THREE.Object3D();
             planet.object3d.add(planet.mesh);
 
             if (planet.ring) {
                 planet.ring.mesh = new THREE.Mesh(
                     new THREE.RingGeometry(
-                        (planet.ring.innerRadius / scale) *
-                            planetScale,
-                        (planet.ring.outerRadius / scale) *
-                            planetScale,
+                        (planet.ring.innerRadius / scale) * planetScale,
+                        (planet.ring.outerRadius / scale) * planetScale,
                         32
                     ),
                     new THREE.MeshStandardMaterial({
-                        map: textureLoader.load(
-                            `/assets/${planet.ring.texture}`
-                        ),
+                        map: textureLoader.load(`/assets/${planet.ring.texture}`),
                         side: THREE.DoubleSide,
                         transparent: true,
                         opacity: planet.ring.opacity,
@@ -165,20 +155,12 @@ const SolarSystem = ({ options }) => {
                 planet.ring.mesh.castShadow = true;
                 planet.ring.mesh.receiveShadow = true;
                 planet.ring.mesh.rotation.x = Math.PI / 2;
-                planet.ring.mesh.position.set(
-                    planet.distance / scale,
-                    0,
-                    0
-                );
+                planet.ring.mesh.position.set(x, 0, z);
                 planet.object3d.add(planet.ring.mesh);
             }
 
             scene.add(planet.object3d);
-            createLineLoopWithMesh(
-                planet.distance / scale,
-                0x005300,
-                1
-            );
+            createLineLoopWithMesh(planet.distance / scale, 0x005300, 1);
             return planet;
         };
 
