@@ -1,65 +1,39 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GUI } from "dat.gui";
+import solarSystem from "../data/solarSystem";
 
 const SolarSystem = ({ options }) => {
-    const { speed, showOrbits, lighting, scale } = options;
+    const [data, setData] = useState(solarSystem);
+    const [orbits, setOrbits] = useState([]);
+    const [scene, setScene] = useState(new THREE.Scene());
+    const [planetScale, setPlanetScale] = useState(100);
+    const [renderer, setRenderer] = useState(
+        new THREE.WebGLRenderer()
+    );
+    const [textureLoader, setTextureLoader] = useState(
+        new THREE.TextureLoader()
+    );
+    const [cubeTextureLoader, setCubeTextureLoader] =
+        useState(new THREE.CubeTextureLoader());
+    const { speed, showOrbits, scale } = options;
+
     useEffect(() => {
-        const renderer = new THREE.WebGLRenderer();
         renderer.setSize(
             window.innerWidth,
             window.innerHeight
         );
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        const textureLoader = new THREE.TextureLoader();
-        const sunTexture = textureLoader.load(
-            "/assets/sun.jpg"
-        );
-        const mercuryTexture = textureLoader.load(
-            "/assets/mercury.jpg"
-        );
-        const venusTexture = textureLoader.load(
-            "/assets/venus.jpg"
-        );
-        const earthTexture = textureLoader.load(
-            "/assets/earth.jpg"
-        );
-        const marsTexture = textureLoader.load(
-            "/assets/mars.jpg"
-        );
-        const jupiterTexture = textureLoader.load(
-            "/assets/jupiter.jpg"
-        );
-        const saturnTexture = textureLoader.load(
-            "/assets/saturn.jpg"
-        );
-        const uranusTexture = textureLoader.load(
-            "/assets/uranus.jpg"
-        );
-        const neptuneTexture = textureLoader.load(
-            "/assets/neptune.jpg"
-        );
-        const plutoTexture = textureLoader.load(
-            "/assets/pluto.jpg"
-        );
-        const saturnRingTexture = textureLoader.load(
-            "/assets/saturn_ring.png"
-        );
-        const uranusRingTexture = textureLoader.load(
-            "/assets/uranus_ring.png"
-        );
-
-        const scene = new THREE.Scene();
-
         const camera = new THREE.PerspectiveCamera(
-            75,
+            45,
             window.innerWidth / window.innerHeight,
             0.1,
-            1000
+            500000
         );
         camera.position.set(-50, 90, 150);
 
@@ -68,44 +42,47 @@ const SolarSystem = ({ options }) => {
             renderer.domElement
         );
 
-        const cubeTextureLoader =
-            new THREE.CubeTextureLoader();
-        const cubeTexture = cubeTextureLoader.load([
-            "/assets/stars.jpg",
-            "/assets/stars.jpg",
-            "/assets/stars.jpg",
-            "/assets/stars.jpg",
-            "/assets/stars.jpg",
-            "/assets/stars.jpg",
+        const stars = data.shift();
+        const starsTexture = cubeTextureLoader.load([
+            `/assets/${stars.texture}`,
+            `/assets/${stars.texture}`,
+            `/assets/${stars.texture}`,
+            `/assets/${stars.texture}`,
+            `/assets/${stars.texture}`,
+            `/assets/${stars.texture}`,
         ]);
-        scene.background = cubeTexture;
-
-        const sungeo = new THREE.SphereGeometry(
-            10.9,
-            50,
-            50
-        );
-        const sunMaterial = new THREE.MeshBasicMaterial({
-            map: sunTexture,
-        });
-        const sun = new THREE.Mesh(sungeo, sunMaterial);
-        scene.add(sun);
-
-        const sunLight = new THREE.PointLight(
-            0xffffff,
-            4,
-            300
-        );
-        sunLight.castShadow = true;
-        scene.add(sunLight);
+        scene.background = starsTexture;
 
         const ambientLight = new THREE.AmbientLight(
             0xffffff,
-            0
+            0.5
         );
         scene.add(ambientLight);
 
-        const path_of_planets = [];
+        const sun = data.shift();
+        sun.mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(
+                sun.radius / scale,
+                50,
+                50
+            ),
+            new THREE.MeshStandardMaterial({
+                map: textureLoader.load(
+                    `/assets/${sun.texture}`
+                ),
+            })
+        );
+        sun.mesh.castShadow = true;
+        sun.mesh.receiveShadow = true;
+        scene.add(sun.mesh);
+
+        sun.light = new THREE.PointLight(0xffffff, 10, 0);
+        sun.light.position.set(0, 0, 0);
+        sun.light.castShadow = true;
+        sun.light.shadow.mapSize.width = 1024;
+        sun.light.shadow.mapSize.height = 1024;
+        scene.add(sun.light);
+
         const createLineLoopWithMesh = (
             radius,
             color,
@@ -141,220 +118,137 @@ const SolarSystem = ({ options }) => {
                 material
             );
             scene.add(lineLoop);
-            path_of_planets.push(lineLoop);
+            orbits.push(lineLoop);
         };
 
-        const generatePlanet = (
-            size,
-            planetTexture,
-            position,
-            ring
-        ) => {
-            const planetGeometry = new THREE.SphereGeometry(
-                size * scale,
-                50,
-                50
-            );
-            const planetMaterial =
+        const createPlanet = (planet) => {
+            planet.mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(
+                    (planet.radius / scale) * planetScale,
+                    50,
+                    50
+                ),
                 new THREE.MeshStandardMaterial({
-                    map: planetTexture,
-                });
-            const planet = new THREE.Mesh(
-                planetGeometry,
-                planetMaterial
+                    map: textureLoader.load(
+                        `/assets/${planet.texture}`
+                    ),
+                })
             );
-            planet.castShadow = true;
-            planet.receiveShadow = true;
-            const planetObj = new THREE.Object3D();
-            planet.position.set(position.x, position.y, 0);
-            planetObj.add(planet);
+            planet.mesh.castShadow = true;
+            planet.mesh.receiveShadow = true;
+            planet.mesh.position.set(
+                planet.distance / scale,
+                0,
+                0
+            );
+            planet.object3d = new THREE.Object3D();
+            planet.object3d.add(planet.mesh);
 
-            if (ring) {
-                const ringGeometry = new THREE.RingGeometry(
-                    ring.innerRadius*scale,
-                    ring.outerRadius*scale,
-                    32
-                );
-                const ringMaterial =
+            if (planet.ring) {
+                planet.ring.mesh = new THREE.Mesh(
+                    new THREE.RingGeometry(
+                        (planet.ring.innerRadius / scale) *
+                            planetScale,
+                        (planet.ring.outerRadius / scale) *
+                            planetScale,
+                        32
+                    ),
                     new THREE.MeshStandardMaterial({
-                        normalMap: ring.ringmat,
+                        map: textureLoader.load(
+                            `/assets/${planet.ring.texture}`
+                        ),
                         side: THREE.DoubleSide,
                         transparent: true,
-                        opacity: 0.6,
-                    });
-                ringMaterial.castShadow = true;
-                const ringMesh = new THREE.Mesh(
-                    ringGeometry,
-                    ringMaterial
+                        opacity: planet.ring.opacity,
+                    })
                 );
-                ringMesh.receiveShadow = true;
-                ringMesh.rotation.x = Math.PI / 2;
-                ringMesh.position.set(
-                    position.x,
-                    position.y,
+                planet.ring.mesh.castShadow = true;
+                planet.ring.mesh.receiveShadow = true;
+                planet.ring.mesh.rotation.x = Math.PI / 2;
+                planet.ring.mesh.position.set(
+                    planet.distance / scale,
+                    0,
                     0
                 );
-                planetObj.add(ringMesh);
+                planet.object3d.add(planet.ring.mesh);
             }
 
-            scene.add(planetObj);
-            createLineLoopWithMesh(position.x, 0x005300, 1);
-            return { planetObj, planet };
+            scene.add(planet.object3d);
+            createLineLoopWithMesh(
+                planet.distance / scale,
+                0x005300,
+                1
+            );
+            return planet;
         };
 
-        const planets = [
-            {
-                ...generatePlanet(
-                    191 / 5000,
-                    mercuryTexture,
-                    {
-                        x: 28,
-                        y: 0,
-                    }
-                ),
-                rotaing_speed_around_sun: 0.004,
-                self_rotation_speed: 0.004,
-            },
-            {
-                ...generatePlanet(
-                    949 / 10000,
-                    venusTexture,
-                    {
-                        x: 44,
-                        y: 0,
-                    }
-                ),
-                rotaing_speed_around_sun: 0.015,
-                self_rotation_speed: 0.002,
-            },
-            {
-                ...generatePlanet(0.1, earthTexture, {
-                    x: 62,
-                    y: 0,
-                }),
-                rotaing_speed_around_sun: 0.01,
-                self_rotation_speed: 0.02,
-            },
-            {
-                ...generatePlanet(53 / 1000, marsTexture, {
-                    x: 78,
-                    y: 0,
-                }),
-                rotaing_speed_around_sun: 0.008,
-                self_rotation_speed: 0.018,
-            },
-            {
-                ...generatePlanet(28 / 25, jupiterTexture, {
-                    x: 100,
-                    y: 0,
-                }),
-                rotaing_speed_around_sun: 0.002,
-                self_rotation_speed: 0.04,
-            },
-            {
-                ...generatePlanet(
-                    941 / 1000,
-                    saturnTexture,
-                    { x: 138, y: 0 },
-                    {
-                        innerRadius: 941 / 1000,
-                        outerRadius: (941 / 1000) * 2,
-                        ringmat: saturnRingTexture,
-                    }
-                ),
-                rotaing_speed_around_sun: 0.0009,
-                self_rotation_speed: 0.038,
-            },
-            {
-                ...generatePlanet(
-                    199 / 500,
-                    uranusTexture,
-                    { x: 176, y: 0 },
-                    {
-                        innerRadius: 199 / 500,
-                        outerRadius: (199 / 500) * 1.5,
-                        ringmat: uranusRingTexture,
-                    }
-                ),
-                rotaing_speed_around_sun: 0.0004,
-                self_rotation_speed: 0.03,
-            },
-            {
-                ...generatePlanet(
-                    381 / 1000,
-                    neptuneTexture,
-                    {
-                        x: 200,
-                        y: 0,
-                    }
-                ),
-                rotaing_speed_around_sun: 0.0001,
-                self_rotation_speed: 0.032,
-            },
-            {
-                ...generatePlanet(93 / 5000, plutoTexture, {
-                    x: 216,
-                    y: 0,
-                }),
-                rotaing_speed_around_sun: 0.0007,
-                self_rotation_speed: 0.008,
-            },
-        ];
+        data.forEach((planet, index) => {
+            data[index] = createPlanet(planet);
+        });
 
         const gui = new GUI();
+
         const options = {
-            "Turn lights": turnLights(
-                ambientLight,
-                lighting
-            ),
-            "Show orbits": turnOrbits(
-                path_of_planets,
-                showOrbits
-            ),
+            "Show orbits": turnOrbits(showOrbits),
             "Turn stars": true,
-            "speed": speed,
+            "Planet scale": planetScale,
+            "Speed": speed,
         };
-        gui.add(options, "Turn lights").onChange((e) => {
-            turnLights(ambientLight, e);
-        });
+
         gui.add(options, "Turn stars").onChange((e) => {
-            turnStars(scene, cubeTexture, e);
+            turnStars(starsTexture, e);
         });
+
         gui.add(options, "Show orbits").onChange((e) => {
-            turnOrbits(path_of_planets, e);
+            turnOrbits(e);
         });
+
+        gui.add(options, "Planet scale", 1, 100).onChange((e) => {
+            const newScale = Math.round(e);
+            setPlanetScale(scale);
+            data.forEach((planet) => {
+                planet.mesh.geometry.dispose();
+                planet.mesh.geometry = new THREE.SphereGeometry(
+                    (planet.radius / scale) * newScale,
+                    50,
+                    50
+                );
+                if (planet.ring) {
+                    planet.ring.mesh.geometry.dispose();
+                    planet.ring.mesh.geometry = new THREE.RingGeometry(
+                        (planet.ring.innerRadius / scale) * newScale,
+                        (planet.ring.outerRadius / scale) * newScale,
+                        32
+                    );
+                }
+            });
+        });
+
         const maxSpeed =
             new URL(window.location.href).searchParams.get(
                 "ms"
             ) * 1;
+
         gui.add(
             options,
-            "speed",
+            "Speed",
             0,
             maxSpeed ? maxSpeed : 20
         );
 
-        const animate = (time) => {
-            sun.rotateY(options.speed * 0.004);
-            planets.forEach(
-                ({
-                    planetObj,
-                    planet,
-                    rotaing_speed_around_sun,
-                    self_rotation_speed,
-                }) => {
-                    planetObj.rotateY(
-                        rotaing_speed_around_sun *
-                            options.speed
-                    );
-                    planet.rotateY(
-                        self_rotation_speed * options.speed
-                    );
-                }
-            );
+
+        renderer.setAnimationLoop((time) => {
+            sun.mesh.rotateY(options.Speed * 0.004);
+            data.forEach((planet) => {
+                planet.object3d.rotateY(
+                    planet.orbitSpeed * options.Speed
+                );
+                planet.object3d.rotateY(
+                    planet.rotatingSpeed * options.Speed
+                );
+            });
             renderer.render(scene, camera);
-        };
-        renderer.setAnimationLoop(animate);
+        });
 
         window.addEventListener("resize", () => {
             camera.aspect =
@@ -366,26 +260,46 @@ const SolarSystem = ({ options }) => {
             );
         });
 
+        const updateScale = (newScale) => {
+            data.forEach((planet) => {
+                planet.mesh.geometry.dispose();
+                planet.mesh.geometry =
+                    new THREE.SphereGeometry(
+                        (planet.radius / scale) * newScale,
+                        50,
+                        50
+                    );
+                if (planet.ring) {
+                    planet.ring.mesh.geometry.dispose();
+                    planet.ring.mesh.geometry =
+                        new THREE.RingGeometry(
+                            (planet.ring.innerRadius /
+                                scale) *
+                                newScale,
+                            (planet.ring.outerRadius /
+                                scale) *
+                                newScale,
+                            32
+                        );
+                }
+            });
+        };
+
         return () => {
             document.body.removeChild(renderer.domElement);
         };
     }, []);
 
-    const turnOrbits = (path_of_planets, e) => {
-        path_of_planets.forEach((dpath) => {
+    const turnOrbits = (e) => {
+        orbits.forEach((dpath) => {
             dpath.visible = e;
         });
         return e;
     };
 
-    const turnLights = (ambientLight, e) => {
-        ambientLight.intensity = e ? 0 : 0.5;
-        return e;
-    };
-
-    const turnStars = (scene, cubeTexture, e) => {
-        if(!e) scene.background = null;
-        else scene.background = cubeTexture;
+    const turnStars = (starsTexture, e) => {
+        if (!e) scene.background = null;
+        else scene.background = starsTexture;
         return e;
     };
 
