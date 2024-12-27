@@ -10,6 +10,7 @@ const solarSystem = [
         radius: 696340,
         rotatingSpeed: 0.04,
         texture: "sun.jpg",
+        color: 0xFFB700,
     },
     {
         id: 2,
@@ -19,6 +20,7 @@ const solarSystem = [
         rotatingSpeed: 0.004,
         orbitSpeed: 0.004,
         texture: "mercury.jpg",
+        color: 0x9C6B4A,
     },
     {
         id: 3,
@@ -28,6 +30,7 @@ const solarSystem = [
         rotatingSpeed: 0.002,
         orbitSpeed: 0.015,
         texture: "venus.jpg",
+        color: 0xE59040,
     },
     {
         id: 4,
@@ -37,6 +40,7 @@ const solarSystem = [
         rotatingSpeed: 0.02,
         orbitSpeed: 0.01,
         texture: "earth.jpg",
+        color: 0x4169E1,
     },
     {
         id: 5,
@@ -46,6 +50,7 @@ const solarSystem = [
         rotatingSpeed: 0.018,
         orbitSpeed: 0.008,
         texture: "mars.jpg",
+        color: 0xCD5C5C,
     },
     {
         id: 6,
@@ -55,6 +60,7 @@ const solarSystem = [
         rotatingSpeed: 0.04,
         orbitSpeed: 0.002,
         texture: "jupiter.jpg",
+        color: 0xD2691E,
     },
     {
         id: 7,
@@ -70,6 +76,7 @@ const solarSystem = [
             texture: "saturn_ring.png",
         },
         texture: "saturn.jpg",
+        color: 0xDAA520,
     },
     {
         id: 8,
@@ -85,6 +92,7 @@ const solarSystem = [
             texture: "uranus_ring.png",
         },
         texture: "uranus.jpg",
+        color: 0x40E0D0,
     },
     {
         id: 9,
@@ -94,6 +102,7 @@ const solarSystem = [
         rotatingSpeed: 0.032,
         orbitSpeed: 0.0001,
         texture: "neptune.jpg",
+        color: 0x4682B4,
     },
     {
         id: 10,
@@ -103,6 +112,7 @@ const solarSystem = [
         rotatingSpeed: 0.008,
         orbitSpeed: 0.0007,
         texture: "pluto.jpg",
+        color: 0xB8860B,
     },
 ];
 

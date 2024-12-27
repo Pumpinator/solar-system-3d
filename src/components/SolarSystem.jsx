@@ -174,7 +174,7 @@ const SolarSystem = ({ options }) => {
             scene.add(planet.object3d);
             createLineLoopWithMesh(
                 planet.distance / scale,
-                0x005300,
+                planet.color,
                 1
             );
             return planet;
@@ -265,31 +265,6 @@ const SolarSystem = ({ options }) => {
                 window.innerHeight
             );
         });
-
-        const updateScale = (newScale) => {
-            data.forEach((planet) => {
-                planet.mesh.geometry.dispose();
-                planet.mesh.geometry =
-                    new THREE.SphereGeometry(
-                        (planet.radius / scale) * newScale,
-                        50,
-                        50
-                    );
-                if (planet.ring) {
-                    planet.ring.mesh.geometry.dispose();
-                    planet.ring.mesh.geometry =
-                        new THREE.RingGeometry(
-                            (planet.ring.innerRadius /
-                                scale) *
-                                newScale,
-                            (planet.ring.outerRadius /
-                                scale) *
-                                newScale,
-                            32
-                        );
-                }
-            });
-        };
 
         return () => {
             document.body.removeChild(renderer.domElement);
