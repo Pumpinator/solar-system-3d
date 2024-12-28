@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GUI } from "dat.gui";
@@ -12,7 +12,7 @@ const SolarSystem = () => {
     const [speed, setSpeed] = useState(1);
     const [scale, setScale] = useState(100000);
     const [planetScale, setPlanetScale] = useState(500);
-    const [sunScale, setSunScale] = useState(10);
+    const [sunScale, setSunScale] = useState(1);
     const [selectedPlanet, setSelectedPlanet] =
         useState(null);
 
@@ -24,14 +24,14 @@ const SolarSystem = () => {
         new THREE.TextureLoader()
     );
 
-    const [
-        cameraInitialPosition,
-        setCameraInitialPosition,
-    ] = useState(new THREE.Vector3(-1000, 5000, 11000));
-    const [cameraInitialTarget, setCameraInitialTarget] =
-        useState(new THREE.Vector3(0, 0, 0));
+    const cameraInitialPosition = new THREE.Vector3(
+        -2000,
+        6000,
+        12000
+    );
+    const cameraInitialTarget = new THREE.Vector3(0, 0, 0);
 
-    const [camera, setCamera] = useState(
+    const cameraRef = useRef(
         new THREE.PerspectiveCamera(
             45,
             window.innerWidth / window.innerHeight,
@@ -39,11 +39,7 @@ const SolarSystem = () => {
             500000
         )
     );
-    camera.position.copy(cameraInitialPosition);
-
-    const [navigation, setNavigation] = useState(
-        new OrbitControls(camera, renderer.domElement)
-    );
+    const navigationRef = useRef(null);
 
     const cubeTextureLoader = new THREE.CubeTextureLoader();
     const starsTexture = cubeTextureLoader.load([
@@ -56,6 +52,22 @@ const SolarSystem = () => {
     ]);
 
     useEffect(() => {
+        const camera = cameraRef.current;
+        camera.position.copy(cameraInitialPosition);
+
+        const navigation = new OrbitControls(
+            camera,
+            renderer.domElement
+        );
+        navigation.target.copy(cameraInitialTarget);
+        navigation.enableDamping = true;
+        navigation.dampingFactor = 0.05;
+        navigation.screenSpacePanning = false;
+        navigation.minDistance = 10;
+        navigation.maxDistance = 500000;
+        navigation.maxPolarAngle = Math.PI / 2;
+        navigationRef.current = navigation;
+
         renderer.setSize(
             window.innerWidth,
             window.innerHeight
@@ -63,6 +75,21 @@ const SolarSystem = () => {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
+
+        return () => {
+            window.removeEventListener("resize", () => {
+                renderer.setSize(
+                    window.innerWidth,
+                    window.innerHeight
+                );
+            });
+            document.body.removeChild(renderer.domElement);
+        };
+    }, [renderer]);
+
+    useEffect(() => {
+        const camera = cameraRef.current;
+        const navigation = navigationRef.current;
 
         const sun = data.find((d) => d.name === "Sun");
         const sunGeometry = new THREE.SphereGeometry(
@@ -143,6 +170,11 @@ const SolarSystem = () => {
         };
 
         const generatePlanet = (planet) => {
+            const angle = Math.random() * Math.PI * 2;
+            const x =
+                Math.cos(angle) * (planet.distance / scale);
+            const z =
+                Math.sin(angle) * (planet.distance / scale);
             const planetGeometry = new THREE.SphereGeometry(
                 (planet.radius / scale) * planetScale,
                 50,
@@ -160,11 +192,7 @@ const SolarSystem = () => {
             );
             planet.mesh.castShadow = true;
             planet.mesh.receiveShadow = true;
-            planet.mesh.position.set(
-                planet.distance / scale,
-                0,
-                0
-            );
+            planet.mesh.position.set(x, 0, z);
             planet.mesh.name = planet.name;
 
             planet.object3d = new THREE.Object3D();
@@ -245,8 +273,9 @@ const SolarSystem = () => {
             (e) => {
                 let newScale = Math.round(e);
                 setPlanetScale(newScale);
-                data.forEach((planet) => {
-                    if (planet.name === "Sun") return;
+                data.filter(
+                    (planet) => planet.name !== "Sun"
+                ).forEach((planet) => {
                     planet.mesh.geometry.dispose();
                     planet.mesh.geometry =
                         new THREE.SphereGeometry(
@@ -276,6 +305,9 @@ const SolarSystem = () => {
             (e) => {
                 let newScale = Math.round(e);
                 setSunScale(newScale);
+                let sun = data.find(
+                    (d) => d.name === "Sun"
+                );
                 sun.mesh.geometry.dispose();
                 sun.mesh.geometry =
                     new THREE.SphereGeometry(
@@ -291,15 +323,12 @@ const SolarSystem = () => {
                 "ms"
             ) * 1;
 
-        gui.add(
-            options,
-            "Speed",
-            0,
-            maxSpeed ? maxSpeed : 20
-        ).onChange((e) => {
-            setSpeed(e);
-            return e;
-        });
+        gui.add(options, "Speed", 0, 1000000).onChange(
+            (e) => {
+                setSpeed(e);
+                return e;
+            }
+        );
 
         window.addEventListener("click", (e) => {
             const raycaster = new THREE.Raycaster();
@@ -359,23 +388,11 @@ const SolarSystem = () => {
                 }
             }
         });
-
-        window.addEventListener("resize", () => {
-            camera.aspect =
-                window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(
-                window.innerWidth,
-                window.innerHeight
-            );
-        });
-
-        return () => {
-            document.body.removeChild(renderer.domElement);
-        };
     }, []);
 
     useEffect(() => {
+        const camera = cameraRef.current;
+        const navigation = navigationRef.current;
         renderer.setAnimationLoop((time) => {
             data.find(
                 (planet) => planet.name === "Sun"
@@ -384,10 +401,10 @@ const SolarSystem = () => {
                 (planet) => planet.name !== "Sun"
             ).forEach((planet) => {
                 planet.object3d.rotateY(
-                    planet.orbitSpeed * speed
+                    (planet.orbitSpeed / scale) * speed
                 );
                 planet.mesh.rotateY(
-                    planet.rotatingSpeed * speed
+                    (planet.rotatingSpeed / scale) * speed
                 );
             });
 
