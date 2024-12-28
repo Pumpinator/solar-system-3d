@@ -56,69 +56,6 @@ const SolarSystem = () => {
     ]);
 
     useEffect(() => {
-        renderer.setAnimationLoop((time) => {
-            data.find(
-                (planet) => planet.name === "Sun"
-            ).mesh.rotateY(0.004 * speed);
-            data.filter(
-                (planet) => planet.name !== "Sun"
-            ).forEach((planet) => {
-                planet.object3d.rotateY(
-                    planet.orbitSpeed * speed
-                );
-                planet.mesh.rotateY(
-                    planet.rotatingSpeed * speed
-                );
-            });
-
-            if (selectedPlanet) {
-                const planetWorldPosition =
-                    new THREE.Vector3();
-                selectedPlanet.mesh.getWorldPosition(
-                    planetWorldPosition
-                );
-
-                const rate = planetScale < 10 ? 0.0001 : 2;
-                const distance =
-                    ((selectedPlanet.radius * rate) /
-                        scale) *
-                    planetScale;
-                const cameraPosition = new THREE.Vector3(
-                    planetWorldPosition.x + distance,
-                    planetWorldPosition.y + distance,
-                    planetWorldPosition.z + distance
-                );
-
-                camera.position.lerp(cameraPosition, 0.1);
-                navigation.target.copy(planetWorldPosition);
-                navigation.update();
-            }
-
-            renderer.render(scene, camera);
-        });
-    }, [selectedPlanet, speed, planetScale]);
-
-    useEffect(() => {
-        if (showOrbits) {
-            orbits.forEach((dpath) => {
-                dpath.visible = true;
-            });
-        } else {
-            orbits.forEach((dpath) => {
-                dpath.visible = false;
-            });
-        }
-    }, [showOrbits]);
-
-    useEffect(() => {
-        if (showStars) {
-            scene.background = starsTexture;
-        } else {
-            scene.background = null;
-        }
-    }, [showStars]);
-
-    useEffect(() => {
         renderer.setSize(
             window.innerWidth,
             window.innerHeight
@@ -271,12 +208,11 @@ const SolarSystem = () => {
             return planet;
         };
 
-        // Update planets map to pass planetData directly
-        const planets = data
-            .filter((planet) => planet.name !== "Sun")
-            .map((planetData) => {
+        data.filter((planet) => planet.name !== "Sun").map(
+            (planetData) => {
                 return generatePlanet(planetData);
-            });
+            }
+        );
 
         const gui = new GUI();
         const options = {
@@ -368,10 +304,28 @@ const SolarSystem = () => {
         window.addEventListener("click", (e) => {
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
-            mouse.x =
-                (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y =
-                -(e.clientY / window.innerHeight) * 2 + 1;
+
+            if (e.touches) {
+                mouse.x =
+                    (e.touches[0].clientX /
+                        window.innerWidth) *
+                        2 -
+                    1;
+                mouse.y =
+                    -(
+                        e.touches[0].clientY /
+                        window.innerHeight
+                    ) *
+                        2 +
+                    1;
+            } else {
+                mouse.x =
+                    (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y =
+                    -(e.clientY / window.innerHeight) * 2 +
+                    1;
+            }
+
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(
                 scene.children,
@@ -403,6 +357,69 @@ const SolarSystem = () => {
             document.body.removeChild(renderer.domElement);
         };
     }, []);
+
+    useEffect(() => {
+        renderer.setAnimationLoop((time) => {
+            data.find(
+                (planet) => planet.name === "Sun"
+            ).mesh.rotateY(0.004 * speed);
+            data.filter(
+                (planet) => planet.name !== "Sun"
+            ).forEach((planet) => {
+                planet.object3d.rotateY(
+                    planet.orbitSpeed * speed
+                );
+                planet.mesh.rotateY(
+                    planet.rotatingSpeed * speed
+                );
+            });
+
+            if (selectedPlanet) {
+                const planetWorldPosition =
+                    new THREE.Vector3();
+                selectedPlanet.mesh.getWorldPosition(
+                    planetWorldPosition
+                );
+
+                const rate = planetScale < 10 ? 0.0001 : 2;
+                const distance =
+                    ((selectedPlanet.radius * rate) /
+                        scale) *
+                    planetScale;
+                const cameraPosition = new THREE.Vector3(
+                    planetWorldPosition.x + distance,
+                    planetWorldPosition.y + distance,
+                    planetWorldPosition.z + distance
+                );
+
+                camera.position.lerp(cameraPosition, 0.1);
+                navigation.target.copy(planetWorldPosition);
+                navigation.update();
+            }
+
+            renderer.render(scene, camera);
+        });
+    }, [selectedPlanet, speed, planetScale]);
+
+    useEffect(() => {
+        if (showOrbits) {
+            orbits.forEach((dpath) => {
+                dpath.visible = true;
+            });
+        } else {
+            orbits.forEach((dpath) => {
+                dpath.visible = false;
+            });
+        }
+    }, [showOrbits]);
+
+    useEffect(() => {
+        if (showStars) {
+            scene.background = starsTexture;
+        } else {
+            scene.background = null;
+        }
+    }, [showStars]);
 
     return <div />;
 };
