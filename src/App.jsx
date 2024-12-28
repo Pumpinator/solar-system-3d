@@ -2,12 +2,6 @@ import React, { useState } from "react";
 import SolarSystem from "./components/SolarSystem";
 
 const App = () => {
-    const [options, setOptions] = useState({
-        speed: 0.001,
-        showOrbits: true,
-        scale: 100000
-    });
-
     return (
         <>
             <a
@@ -22,7 +16,7 @@ const App = () => {
                 />
             </a>
             <div>
-                <SolarSystem options={options} />
+                <SolarSystem />
             </div>
         </>
     );
