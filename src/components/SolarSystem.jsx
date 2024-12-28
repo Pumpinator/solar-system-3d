@@ -304,34 +304,51 @@ const SolarSystem = () => {
         window.addEventListener("click", (e) => {
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
-
-            if (e.touches) {
-                mouse.x =
-                    (e.touches[0].clientX /
-                        window.innerWidth) *
-                        2 -
-                    1;
-                mouse.y =
-                    -(
-                        e.touches[0].clientY /
-                        window.innerHeight
-                    ) *
-                        2 +
-                    1;
-            } else {
-                mouse.x =
-                    (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y =
-                    -(e.clientY / window.innerHeight) * 2 +
-                    1;
-            }
-
+            mouse.x =
+                (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y =
+                -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(
                 scene.children,
                 true
             );
 
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const clickedPlanet = data.find(
+                    (p) => p.name === object.name
+                );
+                if (clickedPlanet) {
+                    setSelectedPlanet(clickedPlanet);
+                }
+            }
+        });
+
+        window.addEventListener("touchend", (e) => {
+            const raycaster = new THREE.Raycaster();
+            const touch = e.changedTouches[0];
+            const rect =
+                renderer.domElement.getBoundingClientRect();
+            const x =
+                ((touch.clientX - rect.left) / rect.width) *
+                    2 -
+                1;
+            const y =
+                -(
+                    (touch.clientY - rect.top) /
+                    rect.height
+                ) *
+                    2 +
+                1;
+            raycaster.setFromCamera(
+                new THREE.Vector2(x, y),
+                camera
+            );
+            const intersects = raycaster.intersectObjects(
+                scene.children,
+                true
+            );
             if (intersects.length > 0) {
                 const object = intersects[0].object;
                 const clickedPlanet = data.find(
