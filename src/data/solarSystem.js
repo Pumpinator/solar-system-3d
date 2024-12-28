@@ -1,10 +1,5 @@
 const solarSystem = [
     {
-        id: 0,
-        name: "Stars",
-        texture: "stars.jpg",
-    },
-    {
         id: 1,
         name: "Sun",
         radius: 696340,

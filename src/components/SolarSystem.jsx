@@ -7,30 +7,27 @@ import solarSystem from "../data/solarSystem";
 const SolarSystem = ({ options }) => {
     const [data, setData] = useState(solarSystem);
     const [orbits, setOrbits] = useState([]);
-    const [scene, setScene] = useState(new THREE.Scene());
-    const [planetScale, setPlanetScale] = useState(100);
-    const [renderer, setRenderer] = useState(
-        new THREE.WebGLRenderer()
-    );
-    const [textureLoader, setTextureLoader] = useState(
-        new THREE.TextureLoader()
-    );
-    const [cubeTextureLoader, setCubeTextureLoader] =
-        useState(new THREE.CubeTextureLoader());
-    const { speed, showOrbits, scale } = options;
+    const [showOrbits, setShowOrbits] = useState(false);
+    const [speed, setSpeed] = useState(1);
+    const [scale, setScale] = useState(100000);
+    const [planetScale, setPlanetScale] = useState(1000);
 
     useEffect(() => {
+        const renderer = new THREE.WebGLRenderer();
         renderer.setSize(
             window.innerWidth,
             window.innerHeight
         );
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
+        const textureLoader = new THREE.TextureLoader();
+
+        const scene = new THREE.Scene();
+
         const camera = new THREE.PerspectiveCamera(
-            45,
+            75,
             window.innerWidth / window.innerHeight,
             0.1,
             500000
@@ -42,46 +39,59 @@ const SolarSystem = ({ options }) => {
             renderer.domElement
         );
 
-        const stars = data.shift();
+        const cubeTextureLoader =
+            new THREE.CubeTextureLoader();
         const starsTexture = cubeTextureLoader.load([
-            `/assets/${stars.texture}`,
-            `/assets/${stars.texture}`,
-            `/assets/${stars.texture}`,
-            `/assets/${stars.texture}`,
-            `/assets/${stars.texture}`,
-            `/assets/${stars.texture}`,
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
+            "/assets/stars.jpg",
         ]);
         scene.background = starsTexture;
 
-        const ambientLight = new THREE.AmbientLight(
+        const sun = data.find((d) => d.name === "Sun");
+        const sunGeometry = new THREE.SphereGeometry(
+            sun.radius / scale,
+            50,
+            50
+        );
+        const sunMaterial = new THREE.MeshBasicMaterial({
+            map: textureLoader.load(
+                `/assets/${sun.texture}`
+            ),
+        });
+        sun.mesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        scene.add(sun.mesh);
+
+        const sunLight = new THREE.PointLight(
             0xffffff,
-            0.5
+            1,
+            Infinity,
+            0
+        );
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.bias = -0.00001;
+        scene.add(sunLight);
+
+        // Reduce ambient light intensity
+        const ambientLight = new THREE.AmbientLight(
+            0x404040,
+            0
         );
         scene.add(ambientLight);
 
-        const sun = data.shift();
-        sun.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(
-                sun.radius / scale,
-                50,
-                50
-            ),
-            new THREE.MeshStandardMaterial({
-                map: textureLoader.load(
-                    `/assets/${sun.texture}`
-                ),
-            })
+        // Add hemisphere light for better ambient illumination
+        const hemisphereLight = new THREE.HemisphereLight(
+            0xffffff,
+            0x404040,
+            0
         );
-        sun.mesh.castShadow = true;
-        sun.mesh.receiveShadow = true;
-        scene.add(sun.mesh);
-
-        sun.light = new THREE.PointLight(0xffffff, 10, 0);
-        sun.light.position.set(0, 0, 0);
-        sun.light.castShadow = true;
-        sun.light.shadow.mapSize.width = 1024;
-        sun.light.shadow.mapSize.height = 1024;
-        scene.add(sun.light);
+        scene.add(hemisphereLight);
 
         const createLineLoopWithMesh = (
             radius,
@@ -121,71 +131,93 @@ const SolarSystem = ({ options }) => {
             orbits.push(lineLoop);
         };
 
-        const createPlanet = (planet) => {
-            const angle = Math.random() * Math.PI * 2; // Ángulo aleatorio en radianes
-            const x =
-                Math.cos(angle) * (planet.distance / scale);
-            const z =
-                Math.sin(angle) * (planet.distance / scale);
-
-            planet.mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(
-                    (planet.radius / scale) * planetScale,
-                    50,
-                    50
-                ),
+        const generatePlanet = (planet) => {
+            const planetGeometry = new THREE.SphereGeometry(
+                (planet.radius / scale) * planetScale,
+                50,
+                50
+            );
+            const planetMaterial =
                 new THREE.MeshStandardMaterial({
                     map: textureLoader.load(
                         `/assets/${planet.texture}`
                     ),
-                })
+                });
+            planet.mesh = new THREE.Mesh(
+                planetGeometry,
+                planetMaterial
             );
             planet.mesh.castShadow = true;
             planet.mesh.receiveShadow = true;
-            planet.mesh.position.set(x, 0, z);
-            planet.object3d = new THREE.Object3D();
-            planet.object3d.add(planet.mesh);
+
+            const planetObj = new THREE.Object3D();
+            planet.mesh.position.set(
+                planet.distance / scale,
+                0,
+                0
+            );
+            planetObj.add(planet.mesh);
 
             if (planet.ring) {
-                planet.ring.mesh = new THREE.Mesh(
-                    new THREE.RingGeometry(
-                        (planet.ring.innerRadius / scale) *
-                            planetScale,
-                        (planet.ring.outerRadius / scale) *
-                            planetScale,
-                        32
-                    ),
-                    new THREE.MeshStandardMaterial({
+                const ringGeometry = new THREE.RingGeometry(
+                    (planet.ring.innerRadius / scale) *
+                        planetScale,
+                    (planet.ring.outerRadius / scale) *
+                        planetScale,
+                    32
+                );
+                const ringMaterial =
+                    new THREE.MeshBasicMaterial({
                         map: textureLoader.load(
                             `/assets/${planet.ring.texture}`
                         ),
                         side: THREE.DoubleSide,
                         transparent: true,
-                        opacity: planet.ring.opacity,
-                    })
+                        opacity: 0.8,
+                        blending: THREE.AdditiveBlending,
+                        shadow: true,
+                        shadowSide: THREE.DoubleSide,
+                    });
+                planet.ring.mesh = new THREE.Mesh(
+                    ringGeometry,
+                    ringMaterial
                 );
-                planet.ring.mesh.castShadow = true;
                 planet.ring.mesh.receiveShadow = true;
                 planet.ring.mesh.rotation.x = Math.PI / 2;
-                planet.ring.mesh.position.set(x, 0, z);
-                planet.object3d.add(planet.ring.mesh);
+                planet.ring.mesh.position.set(0, 0, 0);
+                planet.mesh.add(planet.ring.mesh);
             }
 
-            scene.add(planet.object3d);
+            scene.add(planetObj);
             createLineLoopWithMesh(
                 planet.distance / scale,
-                planet.color,
+                planet.color || 0x005300,
                 1
             );
-            return planet;
+            return { planetObj, planet };
         };
 
-        data.forEach((planet, index) => {
-            data[index] = createPlanet(planet);
-        });
+        // Update planets map to pass planetData directly
+        const planets = data
+            .filter((planet) => planet.name !== "Sun")
+            .map((planetData) => {
+                const planetObj =
+                    generatePlanet(planetData);
+                return {
+                    ...planetObj,
+                    orbitSpeed: planetData.orbitSpeed,
+                    rotatingSpeed: planetData.rotatingSpeed,
+                };
+            });
+
+        const turnOrbits = (e) => {
+            orbits.forEach((dpath) => {
+                dpath.visible = e;
+            });
+            return e;
+        };
 
         const gui = new GUI();
-
         const options = {
             "Show orbits": turnOrbits(showOrbits),
             "Turn stars": true,
@@ -194,18 +226,23 @@ const SolarSystem = ({ options }) => {
         };
 
         gui.add(options, "Turn stars").onChange((e) => {
-            turnStars(starsTexture, e);
+            if (e) {
+                scene.background = starsTexture;
+            } else {
+                scene.background = null;
+            }
         });
 
         gui.add(options, "Show orbits").onChange((e) => {
             turnOrbits(e);
         });
 
-        gui.add(options, "Planet scale", 1, 100).onChange(
+        gui.add(options, "Planet scale", 1, 1000).onChange(
             (e) => {
-                const newScale = Math.round(e);
+                let newScale = Math.round(e);
                 setPlanetScale(scale);
                 data.forEach((planet) => {
+                    if (planet.name === "Sun") return;
                     planet.mesh.geometry.dispose();
                     planet.mesh.geometry =
                         new THREE.SphereGeometry(
@@ -230,12 +267,10 @@ const SolarSystem = ({ options }) => {
                 });
             }
         );
-
         const maxSpeed =
             new URL(window.location.href).searchParams.get(
                 "ms"
             ) * 1;
-
         gui.add(
             options,
             "Speed",
@@ -243,18 +278,26 @@ const SolarSystem = ({ options }) => {
             maxSpeed ? maxSpeed : 20
         );
 
-        renderer.setAnimationLoop((time) => {
+        const animate = (time) => {
             sun.mesh.rotateY(options.Speed * 0.004);
-            data.forEach((planet) => {
-                planet.object3d.rotateY(
-                    planet.orbitSpeed * options.Speed
-                );
-                planet.object3d.rotateY(
-                    planet.rotatingSpeed * options.Speed
-                );
-            });
+            planets.forEach(
+                ({
+                    planetObj,
+                    planet,
+                    orbitSpeed,
+                    rotatingSpeed,
+                }) => {
+                    planetObj.rotateY(
+                        orbitSpeed * options.Speed
+                    );
+                    planet.mesh.rotateY(
+                        rotatingSpeed * options.Speed
+                    );
+                }
+            );
             renderer.render(scene, camera);
-        });
+        };
+        renderer.setAnimationLoop(animate);
 
         window.addEventListener("resize", () => {
             camera.aspect =
@@ -270,19 +313,6 @@ const SolarSystem = ({ options }) => {
             document.body.removeChild(renderer.domElement);
         };
     }, []);
-
-    const turnOrbits = (e) => {
-        orbits.forEach((dpath) => {
-            dpath.visible = e;
-        });
-        return e;
-    };
-
-    const turnStars = (starsTexture, e) => {
-        if (!e) scene.background = null;
-        else scene.background = starsTexture;
-        return e;
-    };
 
     return <div />;
 };
