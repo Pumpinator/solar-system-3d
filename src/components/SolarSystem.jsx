@@ -15,6 +15,9 @@ const SolarSystem = () => {
     const [sunScale, setSunScale] = useState(1);
     const [selectedPlanet, setSelectedPlanet] =
         useState(null);
+    const [isUserInteracting, setIsUserInteracting] =
+        useState(false);
+    const [cameraDistance, setCameraDistance] = useState(0);
 
     const [renderer, setRenderer] = useState(
         new THREE.WebGLRenderer()
@@ -198,34 +201,7 @@ const SolarSystem = () => {
             planet.object3d = new THREE.Object3D();
             planet.object3d.add(planet.mesh);
 
-            if (planet.ring) {
-                const ringGeometry = new THREE.RingGeometry(
-                    (planet.ring.innerRadius / scale) *
-                        planetScale,
-                    (planet.ring.outerRadius / scale) *
-                        planetScale,
-                    32
-                );
-                const ringMaterial =
-                    new THREE.MeshBasicMaterial({
-                        map: textureLoader.load(
-                            `/assets/${planet.ring.texture}`
-                        ),
-                        side: THREE.DoubleSide,
-                        transparent: true,
-                        opacity: 0.8,
-                        blending: THREE.AdditiveBlending,
-                        shadowSide: THREE.DoubleSide,
-                    });
-                planet.ring.mesh = new THREE.Mesh(
-                    ringGeometry,
-                    ringMaterial
-                );
-                planet.ring.mesh.receiveShadow = true;
-                planet.ring.mesh.rotation.x = Math.PI / 2;
-                planet.ring.mesh.position.set(0, 0, 0);
-                planet.mesh.add(planet.ring.mesh);
-            }
+            if (planet.ring) generateRing(planet);
 
             scene.add(planet.object3d);
             createLineLoopWithMesh(
@@ -233,7 +209,84 @@ const SolarSystem = () => {
                 planet.color || 0x005300,
                 1
             );
+
+            if (planet.satellites)
+                generateSatellite(planet);
+
             return planet;
+        };
+
+        const generateRing = (planet) => {
+            const ringGeometry = new THREE.RingGeometry(
+                (planet.ring.innerRadius / scale) *
+                    planetScale,
+                (planet.ring.outerRadius / scale) *
+                    planetScale,
+                32
+            );
+            const ringMaterial =
+                new THREE.MeshBasicMaterial({
+                    map: textureLoader.load(
+                        `/assets/${planet.ring.texture}`
+                    ),
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending,
+                    shadowSide: THREE.DoubleSide,
+                });
+            planet.ring.mesh = new THREE.Mesh(
+                ringGeometry,
+                ringMaterial
+            );
+            planet.ring.mesh.receiveShadow = true;
+            planet.ring.mesh.rotation.x = Math.PI / 2;
+            planet.ring.mesh.position.set(0, 0, 0);
+            planet.mesh.add(planet.ring.mesh);
+        };
+
+        const generateSatellite = (planet) => {
+            planet.satellites.forEach((satellite) => {
+                const angle = Math.random() * Math.PI * 2;
+                const x =
+                    Math.cos(angle) *
+                    (satellite.distance / scale);
+                const z =
+                    Math.sin(angle) *
+                    (satellite.distance / scale);
+                const satelliteGeometry =
+                    new THREE.SphereGeometry(
+                        (satellite.radius / scale) *
+                            planetScale,
+                        50,
+                        50
+                    );
+                const satelliteMaterial =
+                    new THREE.MeshStandardMaterial({
+                        map: textureLoader.load(
+                            `/assets/${satellite.texture}`
+                        ),
+                    });
+                satellite.mesh = new THREE.Mesh(
+                    satelliteGeometry,
+                    satelliteMaterial
+                );
+                satellite.mesh.castShadow = true;
+                satellite.mesh.receiveShadow = true;
+                satellite.mesh.position.set(x, 0, z);
+                satellite.mesh.name = satellite.name;
+
+                satellite.object3d = new THREE.Object3D();
+                satellite.object3d.add(satellite.mesh);
+
+                planet.mesh.add(satellite.object3d);
+
+                createLineLoopWithMesh(
+                    satellite.distance / scale,
+                    satellite.color || 0x005300,
+                    1
+                );
+            });
         };
 
         data.filter((planet) => planet.name !== "Sun").map(
@@ -297,6 +350,22 @@ const SolarSystem = () => {
                                 32
                             );
                     }
+
+                    if (planet.satellites) {
+                        planet.satellites.forEach(
+                            (satellite) => {
+                                satellite.mesh.geometry.dispose();
+                                satellite.mesh.geometry =
+                                    new THREE.SphereGeometry(
+                                        (satellite.radius /
+                                            scale) *
+                                            newScale,
+                                        50,
+                                        50
+                                    );
+                            }
+                        );
+                    }
                 });
             }
         );
@@ -323,7 +392,7 @@ const SolarSystem = () => {
                 "ms"
             ) * 1;
 
-        gui.add(options, "Speed", 0, 1000000).onChange(
+        gui.add(options, "Speed", 0, 100000).onChange(
             (e) => {
                 setSpeed(e);
                 return e;
@@ -391,6 +460,49 @@ const SolarSystem = () => {
     }, []);
 
     useEffect(() => {
+        const handleMouseDown = () =>
+            setIsUserInteracting(true);
+        const handleMouseUp = () =>
+            setIsUserInteracting(false);
+        const handleWheel = (event) => {
+            setIsUserInteracting(true);
+            setCameraDistance(
+                (prevDistance) =>
+                    prevDistance - event.deltaY * 0.1
+            );
+        };
+        const handleMouseClick = () =>
+            setIsUserInteracting(false);
+
+        window.addEventListener(
+            "mousedown",
+            handleMouseDown
+        );
+        window.addEventListener("mouseup", handleMouseUp);
+        window.addEventListener("wheel", handleWheel);
+        window.addEventListener("click", handleMouseClick);
+
+        return () => {
+            window.removeEventListener(
+                "mousedown",
+                handleMouseDown
+            );
+            window.removeEventListener(
+                "mouseup",
+                handleMouseUp
+            );
+            window.removeEventListener(
+                "wheel",
+                handleWheel
+            );
+            window.removeEventListener(
+                "click",
+                handleMouseClick
+            );
+        };
+    }, []);
+
+    useEffect(() => {
         const camera = cameraRef.current;
         const navigation = navigationRef.current;
         renderer.setAnimationLoop((time) => {
@@ -406,6 +518,23 @@ const SolarSystem = () => {
                 planet.mesh.rotateY(
                     (planet.rotatingSpeed / scale) * speed
                 );
+
+                if (planet.satelites) {
+                    planet.satelites.forEach(
+                        (satellite) => {
+                            satellite.object3d.rotateY(
+                                (satellite.orbitSpeed /
+                                    scale) *
+                                    speed
+                            );
+                            satellite.mesh.rotateY(
+                                (satellite.rotatingSpeed /
+                                    scale) *
+                                    speed
+                            );
+                        }
+                    );
+                }
             });
 
             if (selectedPlanet) {
@@ -415,25 +544,70 @@ const SolarSystem = () => {
                     planetWorldPosition
                 );
 
-                const rate = planetScale < 10 ? 0.0001 : 2;
-                const distance =
-                    ((selectedPlanet.radius * rate) /
-                        scale) *
-                    planetScale;
-                const cameraPosition = new THREE.Vector3(
-                    planetWorldPosition.x + distance,
-                    planetWorldPosition.y + distance,
-                    planetWorldPosition.z + distance
-                );
+                if (!isUserInteracting) {
+                    const rate =
+                        planetScale < 10 ? 0.0001 : 2;
+                    const distance =
+                        ((selectedPlanet.radius * rate) /
+                            scale) *
+                            planetScale +
+                        cameraDistance;
+                    const cameraPosition =
+                        new THREE.Vector3(
+                            planetWorldPosition.x +
+                                distance,
+                            planetWorldPosition.y +
+                                distance,
+                            planetWorldPosition.z + distance
+                        );
 
-                camera.position.lerp(cameraPosition, 0.1);
-                navigation.target.copy(planetWorldPosition);
-                navigation.update();
+                    camera.position.lerp(
+                        cameraPosition,
+                        0.1
+                    );
+                    navigation.target.copy(
+                        planetWorldPosition
+                    );
+                    navigation.update();
+                } else {
+                    navigation.target.copy(
+                        planetWorldPosition
+                    );
+                    navigation.update();
+                }
             }
 
             renderer.render(scene, camera);
         });
-    }, [selectedPlanet, speed, planetScale]);
+    }, [
+        selectedPlanet,
+        speed,
+        planetScale,
+        isUserInteracting,
+        cameraDistance,
+    ]);
+
+    useEffect(() => {
+        if (selectedPlanet) {
+            const planetWorldPosition = new THREE.Vector3();
+            selectedPlanet.mesh.getWorldPosition(
+                planetWorldPosition
+            );
+
+            const rate = planetScale < 10 ? 0.0001 : 2;
+            const distance =
+                ((selectedPlanet.radius * rate) / scale) *
+                    planetScale +
+                cameraDistance;
+            const cameraPosition = new THREE.Vector3(
+                planetWorldPosition.x + distance,
+                planetWorldPosition.y + distance,
+                planetWorldPosition.z + distance
+            );
+
+            cameraRef.current.position.copy(cameraPosition);
+        }
+    }, [planetScale, sunScale, cameraDistance]);
 
     useEffect(() => {
         if (showOrbits) {

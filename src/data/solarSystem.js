@@ -36,6 +36,17 @@ const solarSystem = [
         orbitSpeed: 0.01,
         texture: "earth.jpg",
         color: 0x4169e1,
+        satellites: [
+            {
+                name: "Moon",
+                radius: 1737.1,
+                distance: 384400,
+                rotatingSpeed: 0.03,
+                orbitSpeed: 0.05,
+                texture: "moon.jpg",
+                color: 0x696969,
+            },
+        ],
     },
     {
         id: 5,
